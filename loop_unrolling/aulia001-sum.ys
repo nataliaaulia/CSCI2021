@@ -1,0 +1,54 @@
+# Natalia Aulia
+# aulia001@umn.edu
+
+.pos 0
+
+    init:
+        irmovq Stack, %rsp # setting up stack pointer
+        irmovq Stack, %rbp # setting up base pointer
+        call Main
+        halt
+
+
+# Sample linked list
+.align 8
+ele1:
+    .quad 0xa00
+    .quad ele2
+ele2:
+    .quad 0x0b0
+    .quad ele3
+ele3:
+    .quad 0x00c
+    .quad 0
+
+Main:
+    irmovq ele1, %rax
+    pushq %rax            # pointer to list pushed to stack
+    call sum_list
+    ret
+
+sum_list:
+    pushq %rbp
+    rrmovq %rsp, %rbp     # set frame pointer
+    mrmovq 16(%rbp), %rcx # moving ele1 into %rdx
+    xorq %rax, %rax       # val = 0
+    andq %rcx, %rcx
+    je End
+
+Loop:
+    mrmovq (%rdx), %rbx   # moving ls into rbx
+    addq %rbx, %rax       # val += ls
+    mrmovq 8(%rcx), %rcx  # going to next
+    andq %rcx, %rcx       # see if we are in the end or not
+    jne Loop
+
+End :
+    rrmovq %rbp, %rsp
+    popq %rbp
+    ret
+
+# Stack starts here
+    .pos 0x200 
+
+Stack:

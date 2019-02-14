@@ -1,0 +1,104 @@
+#/* $begin ncopy-ys */
+##################################################################
+# ncopy.ys - Copy a src block of len words to dst.
+# Return the number of negative words (<0) contained in src.
+#
+# Natalia Aulia aulia001@umn.edu
+#
+# First of all, I change addq to iaddq to make the code run faster.
+# There is also some load/use hazards in several lines in the original code.
+# Which is why I change and added some codes in between.
+# I also simplify some lines from the original code.
+# For example, I change irmovq $1, %r10 and addq %r10, %rax to iaddq $1, %rax (which is count) 
+#
+# There is also a loop unrolling in this new code to make the code run faster.
+# I assume that the length is 6 and divide the steps to move the elements in 5 Nposes.
+# In the extra section, I add 5 back to length and in the end, I have another loop for the case
+# if the length is one. 
+#
+##################################################################
+# Do not modify this portion
+# Function prologue.
+# %rdi = src, %rsi = dst, %rdx = len
+ncopy:
+
+##################################################################
+# You can modify this portion
+# Loop header
+	iaddq  $-6, %rdx        # len -= 6
+	jl     Extra            # Check for extras
+
+Loop:	mrmovq (%rdi), %r10	# read val from src...
+	mrmovq 8(%rdi), %r11    # read next val from src
+	rmmovq %r10, (%rsi)	# src[i] to dst
+	andq   %r10, %r10	# src[i] <= 0?
+	jg     Npos1		# if so, goto Npos1:
+	iaddq  $1, %rax		# count++
+
+Npos1:	
+	rmmovq %r11, 8(%rsi)    # src[i+1] to dst
+	andq   %r11, %r11       # is %r11 <= 0?
+	jg     Npos2		# if so, go to Npos2:
+	iaddq  $1, %rax         # count++
+
+Npos2: 
+	mrmovq 16(%rdi), %r10   # src[i+2] to %r10
+	mrmovq 24(%rdi), %r11   # src[i+3] to %r11
+	rmmovq %r10, 16(%rsi)   # src[i+2] to dst[i+2]
+	andq   %r10, %r10       # src[i+2] <= 0? 
+	jg     Npos3            # if so, go to Npos3:
+	iaddq  $1, %rax         # count ++
+
+Npos3: 
+	rmmovq %r11, 24(%rsi)   # src[i+3] to dst
+	andq   %r11, %r11       # src[i+3] <= 0? 
+	jg     Npos4            # if so, go to Npos4:
+	iaddq  $1, %rax         # count++ 
+	
+Npos4: 
+	mrmovq 32(%rdi), %r10   # src[i+4] to %r10
+	mrmovq 40(%rdi), %r11   # src[i+5] to %r11
+	rmmovq %r10, 32(%rsi)   # src[i+4] to dst[i+4]
+	andq   %r10, %r10       # src[i+4] <= 0?
+	jg     Npos5            # if so, go to Npos5:
+	iaddq  $1, %rax         # count++
+
+Npos5: 
+	rmmovq %r11, 40(%rsi)   # src[i+5] to dst
+	andq   %r11, %r11       # is %r11 <= 0?
+	jg     Unroller         # if so, go to Unroller
+	iaddq  $1, %rax         # count++
+
+Unroller: 
+	iaddq $48, %rdi         # start unrolling src at [i+6]
+	iaddq $48, %rsi         # start unrolling dst at [i+6]
+	iaddq $-6, %rdx         # len is now 6 less
+	jge   Loop              # if we're not done, start unrolling
+
+Extra:  
+	iaddq $5, %rdx          # return len to the right value
+	jl    Done
+
+Another_Loop:	
+	mrmovq (%rdi), %r10	# read val from src...
+	iaddq  $8, %rdi       
+	rmmovq %r10, (%rsi)	# src[i] to dst
+	andq   %r10, %r10	# src[i] <= 0?
+	jg     Test		# if so, go to Test
+	iaddq  $1, %rax         # count++
+
+Test: 
+	iaddq $8, %rsi          
+	iaddq $-1, %rdx         # len is now 1 less
+	jge   Another_Loop      # if we're not done, start unrolling
+
+
+##################################################################
+# Do not modify the following section of code
+# Function epilogue.
+Done:
+	ret
+##################################################################
+# Keep the following label at the end of your function
+End:
+#/* $end ncopy-ys */

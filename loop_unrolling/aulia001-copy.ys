@@ -1,0 +1,55 @@
+# Natalia Aulia
+# aulia001@umn.edu
+
+.pos 0
+
+init:
+    irmovq Stack, %rsp # setting up stack pointer
+    irmovq Stack, %rbp # setting up base pointer
+    call Main
+    halt
+
+.align 8
+# Source block
+src:
+    .quad 0x001
+    .quad 0x002
+    .quad 0x004
+
+# Destination block
+dest:
+    .quad 0x111
+    .quad 0x222
+    .quad 0x333
+
+Main:
+    irmovq src, %rdi
+    irmovq dest, %rsi
+    irmovq $3, %rdx
+    irmovq $3, %rax
+    call copy_block
+    ret
+
+copy_block:
+    xorq %rax, %rax       # result = 0
+    irmovq $8, %rcx       # use rcx to move the index
+    irmovq $1, %r8        # %r8 could be +1 or -1    
+
+Loop:
+    andq %rdx,%rdx
+    je End
+    mrmovq (%rdi),%r11
+    xorq %r11, %rax
+    rmmovq %r11,(%rsi)
+    addq %rcx, %rdi
+    addq %rcx, %rsi
+    subq %r8, %rdx
+    jmp Loop
+
+End:
+    ret
+
+# Stack starts here
+    .pos 0x200
+
+Stack:
